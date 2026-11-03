@@ -3,178 +3,248 @@ import time
 import streamlit as st
 import json
 import platform
- 
+
 st.set_page_config(
     page_title="MQTT Control",
     page_icon="🎛️",
     layout="centered",
 )
- 
+
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
- 
+    @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=Share+Tech+Mono&display=swap');
+
     :root {
-        --ink: #12263A;
-        --ink-soft: #5B6B7B;
-        --paper: #F3F6F9;
-        --card: #FFFFFF;
-        --line: #DCE4EC;
-        --signal: #0E9F8E;
-        --signal-soft: #E1F5F2;
-        --alert: #D64545;
+        --void: #050A14;
+        --panel: #0A1628;
+        --panel-2: #0F2038;
+        --grid: rgba(0, 229, 255, 0.07);
+        --edge: #17405C;
+        --text: #D6F1FF;
+        --text-dim: #6F93AD;
+        --cyan: #00E5FF;
+        --cyan-glow: rgba(0, 229, 255, 0.45);
+        --magenta: #FF2E88;
+        --magenta-glow: rgba(255, 46, 136, 0.45);
+        --bevel: 14px;
     }
- 
-    html, body, [class*="css"], .stApp { font-family: 'Manrope', system-ui, sans-serif; }
- 
+
+    html, body, [class*="css"], .stApp { font-family: 'Chakra Petch', system-ui, sans-serif; }
+
     .stApp, [data-testid="stAppViewContainer"], [data-testid="stMain"] {
-        background: var(--paper) !important;
-        color: var(--ink) !important;
+        background-color: var(--void) !important;
+        background-image:
+            linear-gradient(var(--grid) 1px, transparent 1px),
+            linear-gradient(90deg, var(--grid) 1px, transparent 1px),
+            radial-gradient(ellipse at 50% -10%, rgba(0,229,255,0.14), transparent 55%);
+        background-size: 36px 36px, 36px 36px, 100% 100%;
+        color: var(--text) !important;
     }
     .block-container { padding-top: 2rem; max-width: 760px; }
- 
+
     header[data-testid="stHeader"] { background: transparent !important; }
-    header[data-testid="stHeader"] * { color: var(--ink) !important; fill: var(--ink) !important; }
- 
+    header[data-testid="stHeader"] * { color: var(--cyan) !important; fill: var(--cyan) !important; }
+
     .stApp p, .stApp label, .stApp li, .stApp h2, .stApp h3,
-    [data-testid="stWidgetLabel"] p { color: var(--ink) !important; }
- 
+    [data-testid="stWidgetLabel"] p { color: var(--text) !important; }
+
+    /* ---------- HERO ---------- */
     .hero {
-        background: var(--ink);
-        border-radius: 20px;
-        padding: 1.6rem 1.8rem;
-        margin-bottom: 1.2rem;
+        position: relative;
+        background: linear-gradient(135deg, var(--panel-2), var(--panel));
+        border: 1px solid var(--cyan);
+        clip-path: polygon(0 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 28px 100%, 0 calc(100% - 28px));
+        padding: 1.6rem 1.9rem;
+        margin-bottom: 1.4rem;
+        box-shadow: 0 0 28px var(--cyan-glow), inset 0 0 40px rgba(0,229,255,0.06);
+    }
+    .hero::before {
+        content: "";
+        position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+        background: var(--cyan);
+        box-shadow: 0 0 14px var(--cyan);
     }
     .stApp .hero h1 {
-        color: #FFFFFF !important;
-        font-size: 1.8rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
+        color: var(--cyan) !important;
+        font-size: 1.9rem;
+        font-weight: 700;
+        letter-spacing: 0.06em;
         margin: 0 0 0.3rem 0;
         padding: 0;
+        text-shadow: 0 0 16px var(--cyan-glow);
     }
-    .stApp .hero p { color: #B9C7D5 !important; margin: 0 0 1rem 0; font-size: 0.95rem; }
+    .stApp .hero p { color: var(--text-dim) !important; margin: 0 0 1rem 0; font-size: 0.95rem; }
     .chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
     .stApp .chip {
-        background: rgba(255,255,255,0.10);
-        border: 1px solid rgba(255,255,255,0.18);
-        color: #E6EEF5 !important;
-        border-radius: 999px;
-        padding: 0.25rem 0.8rem;
+        background: rgba(0,229,255,0.06);
+        border: 1px solid var(--edge);
+        border-left: 3px solid var(--cyan);
+        color: var(--text) !important;
+        font-family: 'Share Tech Mono', monospace;
+        padding: 0.22rem 0.75rem;
         font-size: 0.8rem;
-        font-weight: 600;
     }
- 
+
+    /* ---------- SECCIONES ---------- */
     .stApp .section-title {
-        color: var(--ink) !important;
-        font-weight: 800;
+        color: var(--cyan) !important;
+        font-weight: 700;
         font-size: 1.15rem;
-        margin: 1.6rem 0 0.2rem 0;
+        letter-spacing: 0.05em;
+        margin: 1.8rem 0 0.2rem 0;
+        padding-bottom: 0.4rem;
+        border-bottom: 1px solid var(--edge);
+        text-shadow: 0 0 10px var(--cyan-glow);
     }
     .stApp .section-sub {
-        color: var(--ink-soft) !important;
+        color: var(--text-dim) !important;
         font-size: 0.88rem;
-        margin: 0 0 0.8rem 0;
+        margin: 0.4rem 0 0.9rem 0;
     }
- 
+
+    /* ---------- ESTADO ---------- */
     .state {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 0.8rem 1.1rem;
-        margin-top: 0.8rem;
-        font-weight: 600;
+        gap: 0.7rem;
+        background: var(--panel);
+        border: 1px solid var(--edge);
+        clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+        padding: 0.8rem 1.2rem;
+        margin-top: 0.9rem;
+        font-weight: 500;
     }
-    .stApp .state { color: var(--ink) !important; }
-    .dot { width: 10px; height: 10px; border-radius: 50%; background: #AAB6C2; flex-shrink: 0; }
-    .state.on .dot { background: var(--signal); }
-    .state.off .dot { background: var(--alert); }
+    .stApp .state { color: var(--text) !important; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: #3A5368; flex-shrink: 0; }
+    .state.on .dot { background: var(--cyan); box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan-glow); }
+    .state.off .dot { background: var(--magenta); box-shadow: 0 0 10px var(--magenta), 0 0 20px var(--magenta-glow); }
     .state .tag {
         margin-left: auto;
-        border-radius: 999px;
-        padding: 0.15rem 0.8rem;
-        font-size: 0.8rem;
-        font-weight: 800;
-        background: #EEF2F6;
+        font-family: 'Share Tech Mono', monospace;
+        padding: 0.12rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid var(--edge);
     }
-    .stApp .state.on .tag { background: var(--signal-soft); color: #0A6B5F !important; }
-    .stApp .state.off .tag { background: #FBE9E9; color: #9B2C2C !important; }
- 
+    .stApp .state.on .tag { color: var(--cyan) !important; border-color: var(--cyan); background: rgba(0,229,255,0.1); }
+    .stApp .state.off .tag { color: var(--magenta) !important; border-color: var(--magenta); background: rgba(255,46,136,0.1); }
+
+    /* ---------- LECTURA DE VALOR ---------- */
     .valuecard {
-        background: var(--card);
-        border: 1px solid var(--line);
-        border-radius: 16px;
-        padding: 1rem 1.3rem;
-        margin: 0.4rem 0 0.8rem 0;
+        background: var(--panel);
+        border: 1px solid var(--edge);
+        clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+        padding: 1rem 1.4rem;
+        margin: 0.5rem 0 0.9rem 0;
         display: flex;
         align-items: baseline;
         gap: 0.6rem;
     }
-    .stApp .valuecard .label { color: var(--ink-soft) !important; font-weight: 600; font-size: 0.9rem; }
+    .stApp .valuecard .label { color: var(--text-dim) !important; font-weight: 500; font-size: 0.9rem; }
     .stApp .valuecard .value {
-        color: var(--ink) !important;
-        font-size: 2.2rem;
-        font-weight: 800;
-        letter-spacing: -0.02em;
-        font-variant-numeric: tabular-nums;
+        color: var(--cyan) !important;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 2.6rem;
+        font-weight: 400;
+        letter-spacing: 0.04em;
         margin-left: auto;
+        text-shadow: 0 0 18px var(--cyan-glow);
     }
- 
+
+    /* ---------- BOTONES ---------- */
     .stButton > button {
-        border: none;
-        border-radius: 14px;
+        border: 1px solid var(--cyan);
+        border-radius: 0;
+        clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
         padding: 0.8rem 1rem;
         font-weight: 700;
         font-size: 1rem;
-        background: var(--signal);
-        transition: filter 0.15s ease;
+        letter-spacing: 0.12em;
+        background: rgba(0,229,255,0.1);
+        box-shadow: 0 0 18px var(--cyan-glow), inset 0 0 14px rgba(0,229,255,0.15);
+        transition: background 0.15s ease, box-shadow 0.15s ease;
     }
-    .stButton > button, .stButton > button p, .stButton > button span { color: #FFFFFF !important; }
-    .stButton > button:hover { filter: brightness(0.92); border: none; }
-    .st-key-btn_off button { background: var(--alert); }
-    .st-key-btn_analog button { background: var(--ink); }
- 
-    [data-testid="stSlider"] [role="slider"] { background: var(--signal) !important; box-shadow: none !important; }
-    [data-testid="stSliderThumbValue"], [data-testid="stSliderThumbValue"] *,
-    [data-testid="stTickBarMin"], [data-testid="stTickBarMax"] { color: var(--ink) !important; }
- 
-    div[data-testid="stAlert"] { background: var(--signal-soft) !important; border-radius: 12px; }
-    div[data-testid="stAlert"] p { color: #0A6B5F !important; }
- 
+    .stButton > button, .stButton > button p, .stButton > button span { color: var(--cyan) !important; }
+    .stButton > button:hover {
+        background: var(--cyan);
+        border: 1px solid var(--cyan);
+        box-shadow: 0 0 26px var(--cyan);
+    }
+    .stButton > button:hover, .stButton > button:hover p, .stButton > button:hover span { color: var(--void) !important; }
+    .stButton > button:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+    .st-key-btn_off button {
+        border-color: var(--magenta);
+        background: rgba(255,46,136,0.1);
+        box-shadow: 0 0 18px var(--magenta-glow), inset 0 0 14px rgba(255,46,136,0.15);
+    }
+    .st-key-btn_off button, .st-key-btn_off button p, .st-key-btn_off button span { color: var(--magenta) !important; }
+    .st-key-btn_off button:hover { background: var(--magenta); border-color: var(--magenta); box-shadow: 0 0 26px var(--magenta); }
+    .st-key-btn_off button:hover, .st-key-btn_off button:hover p, .st-key-btn_off button:hover span { color: var(--void) !important; }
+
+    .st-key-btn_analog button { background: var(--panel-2); border-color: var(--edge); box-shadow: none; }
+    .st-key-btn_analog button:hover { background: var(--cyan); border-color: var(--cyan); box-shadow: 0 0 26px var(--cyan); }
+
+    /* ---------- SLIDER ---------- */
+    [data-testid="stSlider"] [role="slider"] {
+        background: var(--cyan) !important;
+        box-shadow: 0 0 14px var(--cyan) !important;
+        border: 2px solid var(--void) !important;
+    }
+    [data-testid="stSliderThumbValue"], [data-testid="stSliderThumbValue"] * {
+        color: var(--cyan) !important;
+        font-family: 'Share Tech Mono', monospace;
+    }
+    [data-testid="stTickBarMin"], [data-testid="stTickBarMax"] {
+        color: var(--text-dim) !important;
+        font-family: 'Share Tech Mono', monospace;
+    }
+
+    /* ---------- ALERTA ---------- */
+    div[data-testid="stAlert"] {
+        background: rgba(0,229,255,0.08) !important;
+        border: 1px solid var(--cyan);
+        border-radius: 0;
+        box-shadow: 0 0 16px var(--cyan-glow);
+    }
+    div[data-testid="stAlert"] p { color: var(--cyan) !important; }
+
     #MainMenu, footer { visibility: hidden; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .stButton > button { transition: none; }
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
- 
+
 values = 0.0
 act1 = "OFF"
- 
- 
+
+
 def on_publish(client, userdata, result):
     print("el dato ha sido publicado \n")
     pass
- 
- 
+
+
 def on_message(client, userdata, message):
     global message_received
     time.sleep(2)
     message_received = str(message.payload.decode("utf-8"))
     st.write(message_received)
- 
- 
+
+
 broker = "157.230.214.127"
 port = 1883
 client1 = paho.Client("samuel")
 client1.on_message = on_message
- 
+
 if "last_act" not in st.session_state:
     st.session_state.last_act = None
- 
+
 st.markdown(
     f"""
     <div class="hero">
@@ -189,15 +259,15 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
- 
+
 st.markdown(
     '<div class="section-title">💡 Actuador</div>'
     '<div class="section-sub">Enciende o apaga el actuador 1 (tópico: enviar1)</div>',
     unsafe_allow_html=True,
 )
- 
+
 col_on, col_off = st.columns(2)
- 
+
 with col_on:
     if st.button("ON", key="btn_on", use_container_width=True):
         act1 = "ON"
@@ -207,7 +277,7 @@ with col_on:
         message = json.dumps({"Act1": act1})
         ret = client1.publish("enviar1", message)
         st.session_state.last_act = "ON"
- 
+
 with col_off:
     if st.button("OFF", key="btn_off", use_container_width=True):
         act1 = "OFF"
@@ -217,7 +287,7 @@ with col_off:
         message = json.dumps({"Act1": act1})
         ret = client1.publish("enviar1", message)
         st.session_state.last_act = "OFF"
- 
+
 last = st.session_state.last_act
 if last:
     st.markdown(
@@ -240,15 +310,15 @@ else:
         """,
         unsafe_allow_html=True,
     )
- 
+
 st.markdown(
     '<div class="section-title">🎚️ Valor analógico</div>'
     '<div class="section-sub">Elige un valor entre 0 y 100 y envíalo (tópico: enviar)</div>',
     unsafe_allow_html=True,
 )
- 
+
 values = st.slider("Selecciona el rango de valores", 0.0, 100.0)
- 
+
 st.markdown(
     f"""
     <div class="valuecard">
@@ -258,12 +328,13 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
- 
+
 if st.button("Enviar valor analógico", key="btn_analog", use_container_width=True):
     client1 = paho.Client("samuel")
     client1.on_publish = on_publish
     client1.connect(broker, port)
     message = json.dumps({"Analog": float(values)})
     ret = client1.publish("enviar", message)
+    st.success(f"Valor {values:.1f} enviado correctamente", icon="✅")
     st.success(f"Valor {values:.1f} enviado correctamente", icon="✅")
  
